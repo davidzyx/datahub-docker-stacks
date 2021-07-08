@@ -53,7 +53,7 @@ def build_tree(specs):
     for key, image in image_specs.items():
         if key not in images:
             curr_image = DockerImageDef(image['image_name'])
-            images[key] = image
+            images[key] = curr_image
         else:
             curr_image = images[key]
         if 'depend_on' in image.keys():
@@ -84,3 +84,4 @@ def build_tree(specs):
 if __name__ == '__main__':
     specs = get_specs('images\spec.yml')
     tree = build_tree(specs)
+    print(tree)
