@@ -40,6 +40,12 @@ def store_dict(name, value, parent='artifacts'):
         json.dump(value, f, indent=2)
 
 
+def read_dict(name, value, parent='artifacts'):
+    with open(pjoin(parent, name), 'w') as f:
+        dict = json.load(f)
+    return dict
+
+
 def bytes_to_hstring(n_bytes):
     return (
         bitmath.Byte(int(n_bytes))
