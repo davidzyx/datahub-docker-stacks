@@ -40,7 +40,7 @@ def store_dict(name, value, parent='artifacts'):
         json.dump(value, f, indent=2)
 
 
-def read_dict(name, value, parent='artifacts'):
+def read_dict(name, parent='artifacts'):
     with open(pjoin(parent, name), 'w') as f:
         dict = json.load(f)
     return dict
