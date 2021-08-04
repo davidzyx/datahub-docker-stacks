@@ -1,7 +1,8 @@
 import docker
 import pandas as pd
 
-from scripts.utils import read_var, bytes_to_hstring
+from scripts.utils import strfdelta, bytes_to_hstring
+from scripts.utils import strip_csv_from_md, csv_to_pd
 
 
 def get_layers(image):
@@ -26,13 +27,19 @@ def get_layers(image):
     )
     df_ordered['elapsed'] = df_ordered['createdAt'].diff()
     df_ordered.loc[1, 'elapsed'] = pd.Timedelta(0)
-    df_ordered['elapsed'] = df_ordered['elapsed'].astype(str).str[-5:]
+    df_ordered['elapsed'] = df_ordered['elapsed'].apply(strfdelta)
     return df_ordered
 
 
 def get_layers_md_table(image, cli=docker.from_env()):
     return (
         get_layers(cli.images.get(image))
-        [['createdAt', 'CMD', 'hSize', 'hcumSize']]
+        [['createdAt', 'CMD', 'hSize', 'hcumSize', 'elapsed', 'Tags']]
         .to_markdown()
     )
+
+
+def get_dependency(image):
+    csv = strip_csv_from_md('wiki/Image Dependency.md')
+    srs = csv_to_pd(csv)['dep']
+    return srs[image]

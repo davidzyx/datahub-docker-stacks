@@ -1,3 +1,5 @@
+from scripts.utils import get_specs, read_var, store_dict, store_var
+from scripts.docker_info import get_dependency
 from scripts.utils import get_specs, read_var, store_dict, store_var, read_dict
 from scripts.order import build_tree
 from scripts.git_helper import get_changed_images
@@ -140,7 +142,7 @@ class DockerStackBuilder:
         self.images = {}
         self.metas = {}
         self.images_built = []
-        self.build_history = read_dict('build_history.json')
+        self.images_dep = {}
 
         # sanity check
         self.images_dirs = []
@@ -197,8 +199,10 @@ class DockerStackBuilder:
 
             # fill buildargs for `$BASE_TAG`
             if 'depend_on' in image_spec:
-                #base_full_tag = self.specs['images'][image_spec['depend_on']]['image_tag']
-                base_full_tag = self.build_history[image_spec['depend_on']]
+                if 'image_tag' in self.specs['images'][image_spec['depend_on']]:
+                    base_full_tag = self.specs['images'][image_spec['depend_on']]['image_tag']
+                else:
+                    base_full_tag = get_dependency(image_tag)
                 custom_tag = base_full_tag.split(':')[1]
                 build_args.update(BASE_TAG=custom_tag)
 
@@ -212,7 +216,7 @@ class DockerStackBuilder:
 
             if not self.dry_run:
                 # Go to build
-                logger.info('')  # TODO: fill meta info
+                print(f'\n*** Started building "{image_tag}" ***')
                 image, meta = dbuild(
                     path=path,
                     build_args=build_args,
@@ -222,6 +226,9 @@ class DockerStackBuilder:
                 if meta:
                     self.images_built.append(image_tag)
                     store_var('IMAGES_BUILT', self.images_built)
+                    if 'depend_on' in image_spec:
+                        self.images_dep[image_tag] = base_full_tag
+                    store_dict('image-dependency.json', self.images_dep)
                 self.images[short_name] = image
                 self.metas[short_name] = meta
 
@@ -254,8 +261,10 @@ if __name__ == '__main__':
 
     logging.basicConfig(filename='builder.log', level=logging.INFO)
     images_changed = read_var('IMAGES_CHANGED')
+    git_suffix = read_var('GIT_HASH_SHORT')
     builder = DockerStackBuilder(
         path='images', specs='spec.yml',
-        images_changed=images_changed
+        images_changed=images_changed, git_suffix=git_suffix
     )
     builder.__enter__()
+    builder.__exit__(None, None, None)
