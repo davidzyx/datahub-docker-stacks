@@ -148,7 +148,7 @@ class DockerStackBuilder:
             for entry in it:
                 if not entry.is_file() and not entry.name.startswith('.'):
                     self.images_dirs.append(entry)
-        assert len(self.specs['images']) == len(self.images_dirs)
+        #assert len(self.specs['images']) == len(self.images_dirs)
         # TODO: maybe more checks
 
     def get_build_order(self):
@@ -232,6 +232,7 @@ class DockerStackBuilder:
 
 def run_build():
     images_changed = read_var('IMAGES_CHANGED')
+    print('changed images are', images_changed)
     git_suffix = read_var('GIT_HASH_SHORT')
     builder = DockerStackBuilder(
         path='images', specs='spec.yml',

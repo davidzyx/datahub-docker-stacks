@@ -1,6 +1,7 @@
 import yaml
 import json
 from os.path import join as pjoin
+import os.path
 import bitmath
 
 
@@ -26,13 +27,17 @@ def store_var(name, value, parent='artifacts'):
 
 
 def read_var(name, parent='artifacts'):
-    with open(pjoin(parent, name), 'r') as f:
-        content = f.read()
+    filepath = pjoin(parent, name)
+    if os.path.isfile(filepath):
+        with open(filepath, 'r') as f:
+            content = f.read()
 
-    if '\n' not in content:
-        return content
+        if '\n' not in content:
+            return content
+        else:
+            return content.split('\n')[:-1]
     else:
-        return content.split('\n')[:-1]
+        return None
 
 
 def store_dict(name, value, parent='artifacts'):
@@ -41,9 +46,13 @@ def store_dict(name, value, parent='artifacts'):
 
 
 def read_dict(name, parent='artifacts'):
-    with open(pjoin(parent, name), 'w') as f:
-        dict = json.load(f)
-    return dict
+    filepath = pjoin(parent, name)
+    if os.path.isfile(filepath):
+        with open(filepath) as f:
+            dict = json.load(f)
+        return dict
+    else:
+        return {}
 
 
 def bytes_to_hstring(n_bytes):
