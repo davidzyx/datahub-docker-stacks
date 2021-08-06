@@ -1,4 +1,5 @@
 from model.imageDef import DockerImageDef
+from scripts.docker_info import get_dependency
 # imageDefs: an array of imageDefs -> in build order
 # build_params_list = list of tuples (path, build_args, img_tag)
 # build_params: path -> only provide img name
@@ -52,8 +53,30 @@ class builder_spec:
         self.imageDefs = images
         self.img_root = root
 
-    def gen_build_args(self, img_modified):
-        build_order = get_build_order()
+    def gen_build_args(self, path, git_suffix, img_modified):
+        build_order = self.get_build_order()
+        build_args = []
+        for imgDef in build_order:
+            build_arg = {}
+            imgDef.to_build = True
+            for plan_name, plan in self.plans.items():
+                curr_tag = f"{plan['tag_prefix']}-{self.git_suffix}"
+                # get base tag
+                if imgDef.depend_on is not None:
+
+                    # if dependent img is built in this run
+                    if imgDef.depend_on.to_build:
+                        base_tag = curr_tag
+                    # get previous tag
+                    else:
+                        # TODO: throw error if prev tag not present
+                        base_full_tag = get_dependency(image_tag)
+                        base_tag = base_full_tag.split(':')[1]
+                    
+                    
+            image_tag = f"{image_spec['image_name']}:{tag}"
+
+            
 
     def get_build_order(self):
         tree_order = self.root.get_level_order()

@@ -186,7 +186,7 @@ class DockerStackBuilder:
             path = pjoin(self.path, short_name)
             tag = f"{self.specs['plans'][plan]['tag_prefix']}-{self.git_suffix}"
             image_tag = f"{image_spec['image_name']}:{tag}"
-
+ 
             # skip if set
             if 'skip_plans' in image_spec and plan in image_spec['skip_plans']:
                 logger.info(f"Skipped {image_tag}")
