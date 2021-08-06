@@ -66,3 +66,4 @@ if __name__ == "__main__":
     print("Git hash shortened:", GitHelper.commit_hash_tag_shortened())
     print("Git message:", GitHelper.commit_message())
     print("Git changed files:", GitHelper.commit_changed_files())
+    print('Git changed images', get_changed_images())
