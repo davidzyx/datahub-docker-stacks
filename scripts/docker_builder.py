@@ -1,10 +1,10 @@
 from scripts.utils import get_specs, read_var, store_dict, store_var
 from scripts.docker_info import get_dependency
 from scripts.utils import get_specs, read_var, store_dict, store_var, read_dict
-from scripts.order import build_tree
 from scripts.git_helper import get_changed_images
 from docker.errors import BuildError
 from docker.utils.json_stream import json_stream
+from model.spec import builder_spec
 import docker
 from collections import namedtuple
 import time
@@ -137,7 +137,8 @@ class DockerStackBuilder:
         self.git_suffix = git_suffix
         self.dry_run = dry_run
         self.images_changed = images_changed
-        self.images_order = self.get_build_order()
+        #self.images_order = self.get_build_order()
+        self.build_spec = builder_spec(self.specs)
 
         self.images = {}
         self.metas = {}
@@ -153,6 +154,85 @@ class DockerStackBuilder:
         #assert len(self.specs['images']) == len(self.images_dirs)
         # TODO: maybe more checks
 
+    def build_img(self, image_name, build_path, build_args, image_tag):
+        # Go to build
+        print(f'\n*** Started building "{image_tag}" ***')
+        image, meta = dbuild(
+            path=build_path,
+            build_args=build_args,
+            image_tag=image_tag,
+            nocache=False
+        )
+        self.images[image_name] = image
+        self.images_built.append(image_tag)
+        return meta
+
+    def process_meta(self, meta, image_name, build_args, image_tag):
+        if meta:
+            if 'BASE_TAG' in build_args:
+                dep_tag = build_args['BASE_TAG']
+                dep_img_name = self.build_spec.imageDefs.depend_on.name
+                dep_full_tag = f"{dep_img_name}:{dep_tag}"
+                self.images_dep[image_tag] = dep_full_tag
+            store_dict('image-dependency.json', self.images_dep)
+        self.metas[image_name] = meta
+
+    def __enter__(self):
+        logger.info(
+            f"Building image stack from {self.path} using {self.specs_fp}")
+
+        build_params = self.build_spec.gen_build_args(
+            self.path, self.git_suffix, self.images_changed)
+        for build_param in build_params:
+            image_name, build_path, build_args, image_tag = build_param
+            if not self.dry_run:
+                # Go to build
+                print(f'\n*** Started building "{image_tag}" ***')
+                meta = self.build_img(
+                    image_name, build_path, build_args, image_tag)
+
+                # FIXME: storing every loop???
+                store_var('IMAGES_BUILT', self.images_built)
+                self.process_meta(meta, image_name, build_args, image_tag)
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        store_dict('builder-metainfo.json', self.metas)
+        store_dict('build_history.json', self.build_history)
+
+
+def run_build():
+    images_changed = read_var('IMAGES_CHANGED')
+    print('changed images are', images_changed)
+    git_suffix = read_var('GIT_HASH_SHORT')
+    builder = DockerStackBuilder(
+        path='images', specs='spec.yml',
+        images_changed=images_changed, git_suffix=git_suffix
+    )
+    builder.__enter__()
+    builder.__exit__(None, None, None)
+
+
+if __name__ == '__main__':
+    # docker_client=docker.from_env()
+    # image = dbuild(
+    #     path='images\datahub-base-notebook',
+    #     build_args={'PYTHON_VERSION': 'python-3.8.8'},
+    #     image_tag='base:test',
+    #     docker_client=docker_client
+    # )
+    # print(image)
+
+    logging.basicConfig(filename='builder.log', level=logging.INFO)
+    images_changed = read_var('IMAGES_CHANGED')
+    git_suffix = read_var('GIT_HASH_SHORT')
+    builder = DockerStackBuilder(
+        path='images', specs='spec.yml',
+        images_changed=images_changed, git_suffix=git_suffix
+    )
+    builder.__enter__()
+    builder.__exit__(None, None, None)
+
+'''
     def get_build_order(self):
         tree, root = build_tree(self.specs)
         tree_order = root.get_level_order()
@@ -167,7 +247,9 @@ class DockerStackBuilder:
             if image_order[idx][0] not in build_order:
                 build_order += (curr_image_def.subtree_order())
         return build_order
+'''
 
+'''
     def __enter__(self):
 
         logger.info(
@@ -231,40 +313,4 @@ class DockerStackBuilder:
                     store_dict('image-dependency.json', self.images_dep)
                 self.images[short_name] = image
                 self.metas[short_name] = meta
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        store_dict('builder-metainfo.json', self.metas)
-        store_dict('build_history.json', self.build_history)
-
-
-def run_build():
-    images_changed = read_var('IMAGES_CHANGED')
-    print('changed images are', images_changed)
-    git_suffix = read_var('GIT_HASH_SHORT')
-    builder = DockerStackBuilder(
-        path='images', specs='spec.yml',
-        images_changed=images_changed, git_suffix=git_suffix
-    )
-    builder.__enter__()
-    builder.__exit__(None, None, None)
-
-
-if __name__ == '__main__':
-    # docker_client=docker.from_env()
-    # image = dbuild(
-    #     path='images\datahub-base-notebook',
-    #     build_args={'PYTHON_VERSION': 'python-3.8.8'},
-    #     image_tag='base:test',
-    #     docker_client=docker_client
-    # )
-    # print(image)
-
-    logging.basicConfig(filename='builder.log', level=logging.INFO)
-    images_changed = read_var('IMAGES_CHANGED')
-    git_suffix = read_var('GIT_HASH_SHORT')
-    builder = DockerStackBuilder(
-        path='images', specs='spec.yml',
-        images_changed=images_changed, git_suffix=git_suffix
-    )
-    builder.__enter__()
-    builder.__exit__(None, None, None)
+'''
