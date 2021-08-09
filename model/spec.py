@@ -5,16 +5,6 @@ from scripts.docker_info import get_dependency
 import os
 from scripts.utils import get_specs
 pjoin = os.path.join
-# imageDefs: an array of imageDefs -> in build order
-# build_params_list = list of tuples (path, build_args, img_tag)
-# build_params: path -> only provide img name
-#               build_args -> provide full -> basetag && dbuild_env
-#               img_tag -> provide
-# in spec: generate all build args -> pick by docker builder to run
-
-# first loop -> build tree -? fill initial field for imageDef -> dbuild_env, img_tag, name
-# second loop -> loop build order -> set isbuilt=true -> imgDependOn: isbuilt == true -> curr tag else query old tag -> if not -> error
-#
 
 
 class builder_spec:
