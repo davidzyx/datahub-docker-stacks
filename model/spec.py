@@ -99,9 +99,10 @@ class builder_spec:
         tree_order = self.img_root.get_level_order()
         image_order = []
         for image in images_changed:
-            image_def = self.imageDefs[image]
-            image_order.append((image_def, tree_order[image_def]))
-        image_order.sort(key=lambda x: x[1])
+            if image in self.imageDefs:
+                image_def = self.imageDefs[image]
+                image_order.append((image_def, tree_order[image_def]))
+            image_order.sort(key=lambda x: x[1])
         build_order = []
         for idx in range(len(image_order)):
             curr_image_def = image_order[idx][0]
@@ -119,7 +120,8 @@ if __name__ == '__main__':
     path = 'images'
     specs = 'spec.yml'
     specs = get_specs(pjoin(path, specs))
-    images_changed = ['datascience-notebook', 'datahub-base-notebook']
+    images_changed = ['datascience-notebook',
+                      'datahub-base-notebook', 'spec.yml']
     git_suffix = 'cb6be13'
     build_spec = builder_spec(specs)
     build_params = build_spec.gen_build_args(
