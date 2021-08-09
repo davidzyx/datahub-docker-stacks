@@ -3,11 +3,11 @@ import logging
 from model.imageDef import DockerImageDef
 from scripts.docker_info import get_dependency
 import os
-from scripts.utils import get_specs
+from scripts.utils import get_specs, get_prev_tag
 pjoin = os.path.join
 
 
-class builder_spec:
+class BuilderSpec:
     def __init__(self, yml_dict):
 
         # TODO: Assertions
@@ -28,7 +28,7 @@ class builder_spec:
         images = {}
         for key, image in image_specs.items():
             if key not in images:
-                curr_image = DockerImageDef(key)
+                curr_image = DockerImageDef(key, image['image_name'])
                 images[key] = curr_image
             else:
                 curr_image = images[key]
@@ -59,7 +59,7 @@ class builder_spec:
             for plan_name, plan in self.plans.items():
                 build_args = {}
                 curr_tag = f"{plan['tag_prefix']}-{git_suffix}"
-                full_image_tag = f"{imgDef.name}:{curr_tag}"
+                full_image_tag = f"{imgDef.img_name}:{curr_tag}"
                 if plan_name in imgDef.skip_plans:
                     logger.info(f"Skipped {full_image_tag}")
                     continue
@@ -72,7 +72,9 @@ class builder_spec:
                     # get previous tag
                     else:
                         # TODO: throw error if prev tag not present
-                        base_full_tag = get_dependency(image_tag)
+                        # TODO: Further testing on this
+                        prev_tag = get_prev_tag(imgDef.img_name, plan_name)
+                        base_full_tag = get_dependency(prev_tag)
                         base_tag = base_full_tag.split(':')[1]
                     build_args.update(BASE_TAG=base_tag)
 
@@ -82,7 +84,8 @@ class builder_spec:
                     if plan_name in imgDef.dbuildenv:
                         build_args.update(imgDef.dbuildenv[plan_name])
                 self.build_params_list.append(
-                    (imgDef.name, imgPath, build_args, full_image_tag))
+                    (imgDef.name, imgPath, build_args, plan_name, full_image_tag))
+
         return self.build_params_list
 
     def get_build_order(self, images_changed):
@@ -113,7 +116,7 @@ if __name__ == '__main__':
     images_changed = ['datascience-notebook',
                       'datahub-base-notebook', 'spec.yml']
     git_suffix = 'cb6be13'
-    build_spec = builder_spec(specs)
+    build_spec = BuilderSpec(specs)
     build_params = build_spec.gen_build_args(
         path, git_suffix, images_changed, logger)
     print(build_spec)

@@ -168,3 +168,11 @@ def url2mdlink(url, text):
 
 def fulltag2fn(tag):
     return tag.replace('/', '-').replace(':', '-')
+
+
+def get_prev_tag(img_name, plan):
+    build_history = read_dict('build_history.json')
+    if img_name+plan in build_history:
+        return build_history[img_name+plan]
+    else:
+        return None

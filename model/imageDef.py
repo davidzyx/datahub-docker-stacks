@@ -12,8 +12,9 @@ def get_specs(f_yaml):
 
 
 class DockerImageDef:
-    def __init__(self, name, depend_on=None) -> None:
+    def __init__(self, name, img_name, depend_on=None) -> None:
         self.name = name
+        self.img_name = img_name
         self.depend_on = depend_on
         self.to_build = False
         self.downstream = []
